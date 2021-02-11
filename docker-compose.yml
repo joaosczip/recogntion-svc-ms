@@ -1,0 +1,21 @@
+version: "3"
+
+networks:
+  default:
+    external:
+      name: main
+
+services:
+  app:
+    build: .
+    container_name: image_recognition_service
+    env_file: ./.env
+    environment:
+      - AWS_S3_BUCKET=upload-files-ms
+      - DEFAULT_REGION=us-east-2
+      - RABBITMQ_CONNECTION_STRING=amqp://rabbitmq:5672
+    volumes:
+      - .:/app
+      - /app/node_modules
+    external_links:
+      - "rabbitmq"
