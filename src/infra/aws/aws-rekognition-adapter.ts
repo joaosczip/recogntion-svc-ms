@@ -1,7 +1,7 @@
 import { Rekognition } from "aws-sdk";
 
 import { Recognizer } from "@/application/protocols";
-import { File } from "@/domain/models";
+import { File, FileLabels } from "@/domain/models";
 import { awsDefaultRegion } from "@/config/aws";
 
 export class AWSRekognitionAdapter implements Recognizer {
@@ -13,7 +13,9 @@ export class AWSRekognitionAdapter implements Recognizer {
     });
   }
 
-  async recognize({ content }: File): Promise<any> {
+  async recognize({
+    content,
+  }: File): Promise<Omit<FileLabels, "name"> | undefined> {
     try {
       const { Labels } = await this.client
         .detectLabels({
@@ -25,7 +27,14 @@ export class AWSRekognitionAdapter implements Recognizer {
         })
         .promise();
 
-      return Labels;
+      if (Labels) {
+        return {
+          labels: Labels.map(({ Name, Confidence }) => ({
+            name: Name as string,
+            confidence: Confidence as number,
+          })),
+        };
+      }
     } catch (error) {
       console.error(error);
     }

@@ -1,8 +1,8 @@
 import { inject, injectable } from "tsyringe";
 
 import { RecognizeImages } from "@/domain/usecases";
-import { FileRecover, Recognizer } from "@/application/protocols";
-import { File } from "@/domain/models";
+import { FileRecover, Logger, Recognizer } from "@/application/protocols";
+import { File, FileLabels } from "@/domain/models";
 
 @injectable()
 export class RemoteRecognition implements RecognizeImages {
@@ -10,19 +10,32 @@ export class RemoteRecognition implements RecognizeImages {
     @inject("FileRecover")
     private readonly fileRecover: FileRecover,
     @inject("Recognizer")
-    private readonly recognizer: Recognizer
+    private readonly recognizer: Recognizer,
+    @inject("Logger")
+    private readonly logger: Logger
   ) {}
 
-  async recoginze(imagesPath: string[]): Promise<void> {
+  async recoginze(images: string[]): Promise<void> {
     const files = await Promise.all(
-      imagesPath.map(async (path) => this.fileRecover.recover(path))
+      images.map(async (name) => this.fileRecover.recover(name))
     );
 
     const labels = await Promise.all(
-      (files as File[]).map(async (file: File) =>
-        this.recognizer.recognize(file)
-      )
+      (files as File[]).map(async (file: File, index) => {
+        const { labels } = (await this.recognizer.recognize(file)) as Omit<
+          FileLabels,
+          "name"
+        >;
+        return {
+          name: images[index],
+          labels,
+        };
+      })
     );
-    console.log("labels", labels);
+
+    await this.logger.log({
+      title: "Files recognizeds",
+      payload: labels,
+    });
   }
 }
