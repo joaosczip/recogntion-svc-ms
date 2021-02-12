@@ -34,7 +34,7 @@ export class RemoteRecognition implements RecognizeImages {
     );
 
     await this.logger.log({
-      title: "Files recognizeds",
+      title: "Files recognition successful",
       payload: labels,
     });
   }
